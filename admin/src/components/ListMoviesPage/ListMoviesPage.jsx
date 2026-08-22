@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { styles5, customStyles } from "../../assets/dummyStyles";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://movie-ticket-booking-backend-llot.onrender.com";
 
 // ---------- helpers ----------
 function normalizeApiBase(b) {
@@ -102,7 +102,7 @@ function getImageUrl(maybe) {
   s = s.replace(/^(uploads\/)+/i, "");
 
   // Now ALWAYS create exactly:
-  // http://localhost:5000/uploads/filename.png
+  // https://movie-ticket-booking-backend-llot.onrender.com/uploads/filename.png
   return `${apiBase}/uploads/${s}`;
 }
 

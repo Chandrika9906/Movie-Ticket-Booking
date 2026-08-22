@@ -9,7 +9,7 @@ const fmtINR = (num) =>
     : "₹0";
 
 // API base — change with Vite env var if needed
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://movie-ticket-booking-backend-llot.onrender.com";
 
 export default function DashboardPage() {
   // fetched data
