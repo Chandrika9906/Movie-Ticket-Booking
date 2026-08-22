@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { bookingsPageStyles, formatTime, formatDuration } from "../../assets/dummyStyles";
 
 // API base
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://movie-ticket-booking-backend-llot.onrender.com";
 
 /* ---------- small data-URI placeholder (offline-safe) ---------- */
 function makePlaceholderDataUri(width = 320, height = 480, text = "No Image") {
