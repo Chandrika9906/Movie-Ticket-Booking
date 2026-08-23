@@ -1,9 +1,13 @@
 import mongoose from "mongoose";
 
-export const connectDB = async ()=> {
-  await mongoose.connect("mongodb+srv://chandrika992006_db_user:Chandusree@cluster0.1vi7xil.mongodb.net/?appName=Cluster0")
-  .then(() => {console.log("DB connected")})
-}
+export const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("DB connected");
+  } catch (error) {
+    console.log("DB connection error:", error);
+  }
+};
 
 // ✨ Step-by-step Instructions (Follow Step 1, then Step 2, then Step 3, …)
 
