@@ -152,7 +152,7 @@ export default function BookingsPage() {
 
         const res = await axios.get(`${API_BASE}/api/bookings/my`, {
   headers: { Authorization: `Bearer ${token}` },
-  timeout: 15000,
+  timeout: 60000,
 });
 
         const data = res?.data || {};

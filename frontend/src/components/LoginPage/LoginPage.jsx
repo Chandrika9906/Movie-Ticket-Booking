@@ -13,7 +13,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { loginStyles } from "../../assets/dummyStyles";
 
 // API base
-const API_BASE = "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://movie-ticket-booking-backend-llot.onrender.com";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
