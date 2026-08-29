@@ -1,11 +1,20 @@
 import mongoose from "mongoose";
 import Booking from "../models/bookingModel.js";
 import Movie from "../models/movieModel.js";
+import User from "../models/userModel.js";
 import Stripe from "stripe";
 import dotenv from "dotenv";
 dotenv.config();
 
-const CLIENT_URL = "https://movie-ticket-booking-frontend-woad.vercel.app";
+const CLIENT_URL_LOCAL = process.env.CLIENT_URL || "http://localhost:5173";
+const CLIENT_URL_DEPLOYED = "https://movie-ticket-booking-frontend-woad.vercel.app";
+
+function resolveClientUrl(req) {
+  const origin = req.headers.origin || req.headers.referer || "";
+  if (origin.startsWith("http://localhost")) return CLIENT_URL_LOCAL;
+  if (origin.startsWith(CLIENT_URL_DEPLOYED)) return CLIENT_URL_DEPLOYED;
+  return CLIENT_URL_DEPLOYED;
+}
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_API_VERSION = "2022-11-15";
 const RECLINER_ROWS = new Set(["D", "E"]);
@@ -133,8 +142,10 @@ function normalizeSeatsFromInput(rawSeats = [], seatIdsFromBody = [], movie = {}
 
 export async function createBooking(req, res) {
   try {
-    if (!req.user) return res.status(401).json({ success: false, message: "Authentication required to create booking" });
+    const CLIENT_URL = resolveClientUrl(req);
+    console.log("ORIGIN:", req.headers.origin, "REFERER:", req.headers.referer, "RESOLVED:", CLIENT_URL);
 
+    if (!req.user) return res.status(401).json({ success: false, message: "Authentication required to create booking" });
     const body = req.body || {};
     const movieId = body.movieId || null;
     const movieName = body.movieName || body.movie?.title || "";
@@ -142,7 +153,7 @@ export async function createBooking(req, res) {
     const rawSeats = Array.isArray(body.seats) ? body.seats.filter(Boolean) : [];
     const seatIdsFromBody = Array.isArray(body.seatIds) ? body.seatIds.filter(Boolean) : [];
     const customer = String(body.customer || (req.user && (req.user.name || req.user.fullName)) || "Guest");
-    const email = String(body.email || (req.user && req.user.email) || "");
+    const email = String(req.user.email || "");
     const paymentMethod = String(body.paymentMethod || "card").toLowerCase();
     const currency = String(body.currency || "inr").toLowerCase();
 
@@ -234,17 +245,57 @@ export async function createBooking(req, res) {
     const booking = await Booking.create(doc);
 
     if (paymentMethod === "card") {
-      let stripe;
-      try { stripe = getStripeOrThrow(); } catch (err) {
-        await Booking.findByIdAndDelete(booking._id).catch(() => { });
-        return res.status(500).json({ success: false, message: "Payment not configured", error: err.message });
+  let stripe;
+
+  try {
+    stripe = getStripeOrThrow();
+  } catch (err) {
+    await Booking.findByIdAndDelete(booking._id).catch(() => {});
+    return res.status(500).json({
+      success: false,
+      message: "Payment not configured",
+      error: err.message
+    });
+  }
+
+  let user = await User.findById(req.user._id);
+
+  if (!user) {
+    await Booking.findByIdAndDelete(booking._id).catch(() => {});
+    return res.status(404).json({
+      success: false,
+      message: "User not found"
+    });
+  }
+
+  let stripeCustomerId = user.stripeCustomerId;
+
+  if (!stripeCustomerId) {
+    const customerObj = await stripe.customers.create({
+      email: user.email,
+      name: user.fullName,
+      metadata: {
+        userId: String(user._id)
       }
+    });
+
+    stripeCustomerId = customerObj.id;
+
+    user.stripeCustomerId = stripeCustomerId;
+    await user.save();
+  }
 
       try {
         const amountPaiseForStripe = Number(doc.amountPaise);
         const session = await stripe.checkout.sessions.create({
-          payment_method_types: ["card"],
-          mode: "payment",
+  payment_method_types: ["card"],
+  mode: "payment",
+
+  customer: stripeCustomerId,
+
+  payment_intent_data: {
+    setup_future_usage: "off_session"
+  },
           line_items: [{
             price_data: {
               currency,
@@ -253,7 +304,7 @@ export async function createBooking(req, res) {
             },
             quantity: 1
           }],
-          success_url: `${CLIENT_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+          success_url: `${CLIENT_URL}/bookings`,
           cancel_url: `${CLIENT_URL}/cancel?session_id={CHECKOUT_SESSION_ID}`,
           metadata: { bookingId: String(booking._id), seats: JSON.stringify(seatIdList), auditorium, showtime: showtime.toISOString() }
         });

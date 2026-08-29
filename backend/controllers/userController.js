@@ -2,13 +2,25 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 
-const JWT_SECRET = process.env.JWT_SECRET;
 const TOKEN_EXPIRES_IN = "24h";
 
 /* ---------------- helpers ---------------- */
 const emailIsValid = (e) => /\S+@\S+\.\S+/.test(String(e || ""));
 const extractCleanPhone = (p) => String(p || "").replace(/\D/g, "");
-const mkToken = (payload) => jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRES_IN });
+
+const mkToken = (payload) => {
+  const secret = process.env.JWT_SECRET;
+
+  console.log("JWT SECRET CHECK:", secret ? "LOADED" : "MISSING");
+
+  if (!secret) {
+    throw new Error("JWT_SECRET is missing");
+  }
+
+  return jwt.sign(payload, secret, {
+    expiresIn: TOKEN_EXPIRES_IN
+  });
+};
 
 /* ---------------- register ---------------- */
 export const registerUser = async (req, res) => {
@@ -93,25 +105,102 @@ export async function login(req, res) {
     const { email, password } = req.body || {};
 
     if (!email || !password) {
-      return res.status(400).json({ success: false, message: "All fields are required." });
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required."
+      });
     }
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ success: false, message: "Invalid email or password." });
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password."
+      });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ success: false, message: "Invalid email or password." });
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password."
+      });
+    }
 
-    const token = mkToken({ id: user._id.toString() });
+    // Include role in JWT
+    const token = mkToken({
+      id: user._id.toString(),
+      role: user.role
+    });
 
     return res.status(200).json({
       success: true,
       message: "Login successful!",
       token,
-      user: { id: user._id.toString(), name: user.name, email: user.email }
+      user: {
+        id: user._id.toString(),
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role
+      }
     });
   } catch (err) {
     console.error("Login error:", err);
-    return res.status(500).json({ success: false, message: "Server error." });
+    return res.status(500).json({
+      success: false,
+      message: "Server error."
+    });
   }
 }
+
+export const verifyAdmin = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "No token provided"
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.id).select("-password");
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    if (user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Admin access required"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Admin verified",
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    console.error("Verify admin error:", error);
+
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired token"
+    });
+  }
+};

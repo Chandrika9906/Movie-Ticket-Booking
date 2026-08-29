@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { styles5, customStyles } from "../../assets/dummyStyles";
 
-const API_BASE = "https://movie-ticket-booking-backend-llot.onrender.com";
+   const API_BASE = import.meta.env.VITE_API_BASE || "https://movie-ticket-booking-backend-llot.onrender.com";
 
 // ---------- helpers ----------
 function normalizeApiBase(b) {

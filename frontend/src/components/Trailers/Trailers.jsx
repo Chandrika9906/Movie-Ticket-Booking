@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { trailersStyles, trailersCSS } from "../../assets/dummyStyles";
 
-const API_BASE = "https://movie-ticket-booking-backend-llot.onrender.com";
+   const API_BASE = import.meta.env.VITE_API_BASE || "https://movie-ticket-booking-backend-llot.onrender.com";
 const PLACEHOLDER_THUMB =
   "https://via.placeholder.com/800x450?text=No+Thumbnail";
   

@@ -13,7 +13,7 @@ import {
 import { toast } from "react-toastify";
 import { seatSelectorHStyles } from "../../assets/dummyStyles";
 
-const API_BASE = "https://movie-ticket-booking-backend-llot.onrender.com";
+   const API_BASE = import.meta.env.VITE_API_BASE || "https://movie-ticket-booking-backend-llot.onrender.com";
 
 /* layout */
 const ROWS = [
@@ -434,7 +434,7 @@ export default function SeatSelectorPage() {
         seats: seatsArr,
         paymentMethod: "card",
         currency: "INR",
-        email: "",
+        email: localStorage.getItem("userEmail") || "",
       };
 
       const res = await axios.post(`${API_BASE}/api/bookings`, payload, {

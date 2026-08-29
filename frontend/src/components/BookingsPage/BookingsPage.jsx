@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { bookingsPageStyles, formatTime, formatDuration } from "../../assets/dummyStyles";
 
 // API base
-const API_BASE = "https://movie-ticket-booking-backend-llot.onrender.com";
+   const API_BASE = import.meta.env.VITE_API_BASE || "https://movie-ticket-booking-backend-llot.onrender.com";
 
 /* ---------- small data-URI placeholder (offline-safe) ---------- */
 function makePlaceholderDataUri(width = 320, height = 480, text = "No Image") {
@@ -150,18 +150,10 @@ export default function BookingsPage() {
           return;
         }
 
-        let res;
-        try {
-          res = await axios.get(`${API_BASE}/api/bookings/my`, {
-            headers: { Authorization: `Bearer ${token}` },
-            timeout: 15000,
-          });
-        } catch (err) {
-          res = await axios.get(`${API_BASE}/api/bookings`, {
-            headers: { Authorization: `Bearer ${token}` },
-            timeout: 15000,
-          });
-        }
+        const res = await axios.get(`${API_BASE}/api/bookings/my`, {
+  headers: { Authorization: `Bearer ${token}` },
+  timeout: 15000,
+});
 
         const data = res?.data || {};
         let items = [];

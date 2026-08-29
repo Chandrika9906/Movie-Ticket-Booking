@@ -15,7 +15,7 @@ const bookingRouter = express.Router();
 
 bookingRouter.post("/", authMiddleware, createBooking);
 bookingRouter.get("/confirm-payment", confirmPayment);
-bookingRouter.get("/", listBookings);
+bookingRouter.get("/", authMiddleware, listBookings);
 bookingRouter.get("/occupied",getOccupiedSeats);
 
 // Specific static routes must come BEFORE dynamic routes like "/:id"

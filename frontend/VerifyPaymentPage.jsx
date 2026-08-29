@@ -34,7 +34,7 @@ const VerifyPaymentPage = () => {
       try {
         setStatusMsg("Confirming payment with server...");
 
-        const API_BASE = "https://movie-ticket-booking-backend-llot.onrender.com";
+           const API_BASE = import.meta.env.VITE_API_BASE || "https://movie-ticket-booking-backend-llot.onrender.com";
         const res = await axios.get(
           `${API_BASE}/api/bookings/confirm-payment`,
           {

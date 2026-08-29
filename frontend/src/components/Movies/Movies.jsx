@@ -3,7 +3,7 @@ import { Tickets } from "lucide-react";
 import { Link } from "react-router-dom";
 import { moviesStyles } from "../../assets/dummyStyles";
 
-const API_BASE = "https://movie-ticket-booking-backend-llot.onrender.com";
+   const API_BASE = import.meta.env.VITE_API_BASE || "https://movie-ticket-booking-backend-llot.onrender.com";
 const PLACEHOLDER = "https://via.placeholder.com/400x600?text=No+Poster";
 
 function getUploadUrl(maybe) {
