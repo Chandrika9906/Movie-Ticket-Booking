@@ -18,6 +18,7 @@ export default function DashboardPage() {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
+    
     let cancelled = false;
 
     async function fetchAll() {
