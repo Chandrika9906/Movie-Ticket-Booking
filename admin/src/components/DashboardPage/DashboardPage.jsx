@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import axios from "axios";
 import { styles3, fontStyles2 } from "../../assets/dummyStyles";
 
@@ -9,7 +9,15 @@ const fmtINR = (num) =>
     : "₹0";
 
 // API base — change with Vite env var if needed
-   const API_BASE = import.meta.env.VITE_API_BASE || "https://movie-ticket-booking-backend-llot.onrender.com";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://movie-ticket-booking-backend-llot.onrender.com";
+
+const REQUEST_TIMEOUT_MS = 30000; // generous timeout to survive Render cold starts
+const RETRY_DELAY_MS = 4000;
+const MAX_RETRIES = 2;
+
+function getStoredAdminToken() {
+  return localStorage.getItem("adminToken") || null;
+}
 
 export default function DashboardPage() {
   // fetched data
@@ -17,20 +25,38 @@ export default function DashboardPage() {
   const [bookings, setBookings] = useState([]);
   const [users, setUsers] = useState([]);
 
+  // ui state
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const retryCountRef = useRef(0);
+
   useEffect(() => {
-    
     let cancelled = false;
 
-    async function fetchAll() {
-      try {
+    async function fetchAll(isRetry = false) {
+      if (!isRetry) {
+        setLoading(true);
+        setLoadError(false);
+      } else {
+        setRetrying(true);
+      }
+
+            try {
         // request paid bookings only (defensive: backend may already default to paid)
-        console.log("Starting dashboard fetch, API_BASE:", API_BASE);
+        const token = getStoredAdminToken();
+
         const [mRes, bRes, uRes] = await Promise.allSettled([
-          axios.get(`${API_BASE}/api/movies`),
+          axios.get(`${API_BASE}/api/movies`, { timeout: REQUEST_TIMEOUT_MS }),
           axios.get(`${API_BASE}/api/bookings`, {
             params: { paymentStatus: "paid", limit: 1000 },
+            timeout: REQUEST_TIMEOUT_MS,
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
           }),
-          axios.get(`${API_BASE}/api/users`),
+          axios.get(`${API_BASE}/api/users`, {
+            timeout: REQUEST_TIMEOUT_MS,
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          }),
         ]);
 
         // helper to normalise typical API shapes
@@ -43,7 +69,6 @@ export default function DashboardPage() {
           if (Array.isArray(data.items)) return data.items;
           if (Array.isArray(data.rows)) return data.rows;
           if (Array.isArray(data.data)) return data.data;
-          // sometimes backend returns { success: true, items: [...] }
           if (Array.isArray(data.items)) return data.items;
           return [];
         };
@@ -128,13 +153,32 @@ export default function DashboardPage() {
           name: u.name || u.fullName || u.username || "",
         }));
 
+        const anyRejected = [mRes, bRes, uRes].some(
+          (r) => r.status === "rejected"
+        );
+
         if (!cancelled) {
           setMovies(normMovies);
           setBookings(paidBookings);
           setUsers(normUsers);
+          setLoadError(anyRejected);
+        }
+
+        // auto-retry once/twice if something failed (likely a cold-start backend)
+        if (anyRejected && !cancelled && retryCountRef.current < MAX_RETRIES) {
+          retryCountRef.current += 1;
+          setTimeout(() => {
+            if (!cancelled) fetchAll(true);
+          }, RETRY_DELAY_MS);
         }
       } catch (err) {
         console.error("dashboard fetch error:", err);
+        if (!cancelled) setLoadError(true);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+          setRetrying(false);
+        }
       }
     }
 
@@ -196,6 +240,16 @@ export default function DashboardPage() {
     return { totalBookings, totalRevenue, totalUsers, movieStats };
   }, [movies, bookings, users]);
 
+  const handleManualRetry = () => {
+    retryCountRef.current = 0;
+    setLoadError(false);
+    setLoading(true);
+    // re-trigger the effect logic by calling fetchAll indirectly via state change
+    // simplest: force a full reload of this run by re-invoking through a key change
+    // easiest safe approach: just reload the page section by re-running the effect body
+    window.location.reload();
+  };
+
   return (
     <div
       className={styles3.dashboardPageContainer}
@@ -211,6 +265,61 @@ export default function DashboardPage() {
             </p>
           </div>
         </header>
+
+        {/* Loading state */}
+        {loading && (
+          <div
+            style={{
+              padding: "16px 20px",
+              marginBottom: "20px",
+              borderRadius: "10px",
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              textAlign: "center",
+            }}
+          >
+            Loading dashboard data… (this can take up to a minute on first
+            load if the server was asleep)
+          </div>
+        )}
+
+        {/* Error / retry banner */}
+        {!loading && loadError && (
+          <div
+            style={{
+              padding: "14px 20px",
+              marginBottom: "20px",
+              borderRadius: "10px",
+              background: "rgba(220,38,38,0.12)",
+              border: "1px solid rgba(220,38,38,0.4)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              flexWrap: "wrap",
+            }}
+          >
+            <span>
+              {retrying
+                ? "Some data failed to load — retrying…"
+                : "Some data failed to load. The server may have been asleep — try again."}
+            </span>
+            <button
+              onClick={handleManualRetry}
+              style={{
+                padding: "6px 14px",
+                borderRadius: "6px",
+                background: "#dc2626",
+                color: "#fff",
+                border: "none",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         <section className={styles3.summaryGrid}>
           <div className={styles3.summaryCard}>
@@ -295,7 +404,7 @@ export default function DashboardPage() {
                   );
                 })}
 
-                {summary.movieStats.length === 0 && (
+                {!loading && summary.movieStats.length === 0 && (
                   <tr>
                     <td colSpan={4} className={styles3.tableEmpty}>
                       No movie data yet.
@@ -339,7 +448,7 @@ export default function DashboardPage() {
               );
             })}
 
-            {summary.movieStats.length === 0 && (
+            {!loading && summary.movieStats.length === 0 && (
               <div className={styles3.mobileEmpty}>No movie data yet.</div>
             )}
           </div>

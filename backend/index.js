@@ -24,6 +24,7 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/api/auth", userRouter)
 app.use("/api/movies", movieRouter);
 app.use("/api/bookings", bookingRouter);
+app.use("/api/users", userRouter);
 
 app.get('/', (req, res) => {
     res.send('API Working');

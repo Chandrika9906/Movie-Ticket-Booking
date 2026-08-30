@@ -204,3 +204,12 @@ export const verifyAdmin = async (req, res) => {
     });
   }
 };
+export async function listUsers(req, res) {
+  try {
+    const users = await User.find({}, { password: 0 }).lean().exec(); // exclude password field
+    return res.json({ success: true, items: users });
+  } catch (err) {
+    console.error("listUsers error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+}

@@ -1,13 +1,13 @@
 import express from "express";
 
-import { login, registerUser } from "../controllers/userController.js";
+import { login, registerUser, listUsers } from "../controllers/userController.js";
 import { authMiddleware, adminOnly } from "../middlewares/auth.js";
 
 const userRouter = express.Router();
 
 userRouter.post("/register", registerUser);
-
 userRouter.post("/login", login);
+userRouter.get("/", authMiddleware,adminOnly, listUsers);
 
 // Verify that the logged-in user is an admin
 userRouter.get("/verify-admin", (req, res) => {

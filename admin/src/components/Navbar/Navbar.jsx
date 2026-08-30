@@ -8,6 +8,7 @@ import {
   Ticket,
   Menu as MenuIcon,
   X as XIcon,
+  LogOut,
 } from "lucide-react";
 import { styles4 } from "../../assets/dummyStyles";
 
@@ -16,6 +17,14 @@ export default function Navbar() {
 
   const toggleOpen = useCallback(() => setOpen((v) => !v), []);
   const close = useCallback(() => setOpen(false), []);
+
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem("adminToken");
+    const frontendUrl = window.location.hostname === "localhost"
+      ? "http://localhost:5173/login"
+      : "https://movie-ticket-booking-frontend-woad.vercel.app/login";
+    window.location.href = frontendUrl;
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -84,6 +93,15 @@ export default function Navbar() {
             <NavItem to="/dashboard" Icon={Calendar} label="DASHBOARD" />
             {/* Bookings (new) */}
             <NavItem to="/bookings" Icon={Ticket} label="BOOKINGS" />
+            {/* Logout (new) */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-red-200 hover:bg-red-600/20 hover:text-white transition"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-sm font-semibold">LOGOUT</span>
+            </button>
+            
           </div>
 
           {/* Mobile / Tablet Hamburger */}
@@ -243,6 +261,20 @@ export default function Navbar() {
                 </>
               )}
             </NavLink>
+
+            {/* Logout (mobile, new) */}
+            <button
+              onClick={() => {
+                close();
+                handleLogout();
+              }}
+              className={`${styles4.mobileNavLinkBase} ${styles4.mobileNavLinkInactive} w-full text-left`}
+            >
+              <LogOut
+                className={`${styles4.mobileNavLinkIconBase} ${styles4.mobileNavLinkIconInactive}`}
+              />
+              <span className={styles4.mobileNavLinkText}>LOGOUT</span>
+            </button>
           </nav>
 
           {/* Footer action (optional) */}
