@@ -100,6 +100,7 @@ function getStoredToken() {
     localStorage.getItem("token") ||
     localStorage.getItem("authToken") ||
     localStorage.getItem("accessToken") ||
+    localStorage.getItem("adminToken") ||
     null
   );
 }
