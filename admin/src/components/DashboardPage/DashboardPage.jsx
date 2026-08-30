@@ -24,6 +24,7 @@ export default function DashboardPage() {
     async function fetchAll() {
       try {
         // request paid bookings only (defensive: backend may already default to paid)
+        console.log("Starting dashboard fetch, API_BASE:", API_BASE);
         const [mRes, bRes, uRes] = await Promise.allSettled([
           axios.get(`${API_BASE}/api/movies`),
           axios.get(`${API_BASE}/api/bookings`, {
