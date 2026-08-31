@@ -194,7 +194,7 @@ const Footer = () => {
                 <div className={footerStyles.contactIconContainer}>
                   <Mail className={footerStyles.contactIcon} />
                 </div>
-                <span className={footerStyles.contactText}>chandrika993006@gmail.com</span>
+                <span className={footerStyles.contactText}>chandrika992006@gmail.com</span>
               </li>
               <li className={footerStyles.contactItem}>
                 <div className={footerStyles.contactIconContainer}>
