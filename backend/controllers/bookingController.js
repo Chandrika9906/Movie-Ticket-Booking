@@ -304,9 +304,9 @@ export async function createBooking(req, res) {
             },
             quantity: 1
           }],
-          success_url: `${CLIENT_URL}/bookings`,
-          cancel_url: `${CLIENT_URL}/cancel?session_id={CHECKOUT_SESSION_ID}`,
-          metadata: { bookingId: String(booking._id), seats: JSON.stringify(seatIdList), auditorium, showtime: showtime.toISOString() }
+         success_url: `${CLIENT_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+cancel_url: `${CLIENT_URL}/cancel?session_id={CHECKOUT_SESSION_ID}`,
+metadata: { bookingId: String(booking._id), seats: JSON.stringify(seatIdList), auditorium, showtime: showtime.toISOString() }
         });
 
         booking.paymentSessionId = session.id;

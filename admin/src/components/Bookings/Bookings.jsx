@@ -25,6 +25,7 @@ const fmtINR = (n) =>
 
 function getStoredToken() {
   return (
+    localStorage.getItem("adminToken") ||
     localStorage.getItem("token") ||
     localStorage.getItem("authToken") ||
     localStorage.getItem("accessToken") ||
